@@ -38,7 +38,6 @@ class Matrix {
   Matrix(int rows, int cols) {
     rows_ = rows;
     cols_ = cols;
-    //linear_ = (T*)malloc(sizeof(T) * (rows * cols)); Cstyle
     linear_ = new T[rows * cols];
   }
 
@@ -122,7 +121,7 @@ class RowMatrix : public Matrix<T> {
   RowMatrix(int rows, int cols) : Matrix<T>(rows, cols) {
     data_ = new T*[rows];
     T *p = this->linear_;
-    for(int i = 0; i < rows; i++) {
+    for (int i = 0; i < rows; i++) {
       data_[i] = p;
       p += cols;
     }
@@ -189,7 +188,7 @@ class RowMatrix : public Matrix<T> {
    */
   void FillFrom(const std::vector<T> &source) override {
     int m_size = this->cols_ * this->rows_;
-    if (int(source.size()) != m_size) {
+    if (static_cast<int>(source.size()) != m_size) {
       ExceptionType t = ExceptionType::OUT_OF_RANGE;
       throw Exception(t, "out of range");
     }
@@ -245,7 +244,7 @@ class RowMatrixOperations {
     std::unique_ptr<RowMatrix<T>> res_ptr(new RowMatrix<T>(row, col));
     for (int i = 0; i < row; i++) {
       for (int j = 0; j < col; j++) {
-        res_ptr.get()->SetElement(i, j, matrixA->GetElement(i,j) + matrixB->GetElement(i,j));
+        res_ptr.get()->SetElement(i, j, matrixA->GetElement(i, j) + matrixB->GetElement(i, j));
       }
     }
     return res_ptr;
