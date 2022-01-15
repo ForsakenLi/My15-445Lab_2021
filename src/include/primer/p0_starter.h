@@ -99,7 +99,7 @@ class Matrix {
    * Destroy a matrix instance.
    * (P0): Add implementation
    */
-  virtual ~Matrix() {  // 具有动态分配内存的类析构函数必须是虚函数/纯虚函数
+  virtual ~Matrix() {
     delete[] linear_;
   }
 };
@@ -202,7 +202,7 @@ class RowMatrix : public Matrix<T> {
    *
    * Destroy a RowMatrix instance.
    */
-  virtual ~RowMatrix() { delete[] data_; }
+  ~RowMatrix() { delete[] data_; }
 
  private:
   /**
@@ -242,7 +242,7 @@ class RowMatrixOperations {
     std::unique_ptr<RowMatrix<T>> res_ptr(new RowMatrix<T>(row, col));
     for (int i = 0; i < row; i++) {
       for (int j = 0; j < col; j++) {
-        res_ptr.get()->SetElement(i, j, matrixA->GetElement(i, j) + matrixB->GetElement(i, j));
+        res_ptr->SetElement(i, j, matrixA->GetElement(i, j) + matrixB->GetElement(i, j));
       }
     }
     return res_ptr;
@@ -275,7 +275,7 @@ class RowMatrixOperations {
         for (int k = 1; k < time; k++) {
           t += matrixA->GetElement(i, k) * matrixB->GetElement(k, j);
         }
-        res_ptr.get()->SetElement(i, j, t);
+        res_ptr->SetElement(i, j, t);
       }
     }
     return res_ptr;
