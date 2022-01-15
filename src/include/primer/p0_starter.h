@@ -202,7 +202,7 @@ class RowMatrix : public Matrix<T> {
    *
    * Destroy a RowMatrix instance.
    */
-  ~RowMatrix() { delete[] data_; }
+  ~RowMatrix() override { delete[] data_; }
 
  private:
   /**
