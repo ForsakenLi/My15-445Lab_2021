@@ -100,7 +100,7 @@ class Matrix {
    * (P0): Add implementation
    */
   virtual ~Matrix() {  // 具有动态分配内存的类析构函数必须是虚函数/纯虚函数
-    delete [] linear_;
+    delete[] linear_;
   }
 };
 
@@ -119,7 +119,7 @@ class RowMatrix : public Matrix<T> {
    * @param cols The number of columns
    */
   RowMatrix(int rows, int cols) : Matrix<T>(rows, cols) {
-    data_ = new T*[rows];
+    data_ = new T *[rows];
     T *p = this->linear_;
     for (int i = 0; i < rows; i++) {
       data_[i] = p;
@@ -202,9 +202,7 @@ class RowMatrix : public Matrix<T> {
    *
    * Destroy a RowMatrix instance.
    */
-  virtual ~RowMatrix() {
-    delete [] data_;
-  }
+  virtual ~RowMatrix() { delete[] data_; }
 
  private:
   /**
