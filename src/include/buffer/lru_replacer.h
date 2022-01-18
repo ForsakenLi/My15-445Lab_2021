@@ -14,8 +14,8 @@
 
 #include <list>
 #include <mutex>  // NOLINT
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "buffer/replacer.h"
 #include "common/config.h"
@@ -49,7 +49,6 @@ class LRUReplacer : public Replacer {
   bool InLRUReplacer(frame_id_t frame_id);
 
  private:
-
   // 所有非指针类型的成员会自动析构
   std::mutex latch_{};
 

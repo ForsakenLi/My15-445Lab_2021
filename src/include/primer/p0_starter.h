@@ -99,9 +99,7 @@ class Matrix {
    * Destroy a matrix instance.
    * (P0): Add implementation
    */
-  virtual ~Matrix() {
-    delete[] linear_;
-  }
+  virtual ~Matrix() { delete[] linear_; }
 };
 
 /**

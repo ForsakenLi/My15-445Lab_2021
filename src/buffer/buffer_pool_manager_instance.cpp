@@ -83,7 +83,7 @@ Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
   if (frame_id == -1) {  // fetch fail
     return nullptr;
   }
-  *page_id = AllocatePage();             // 通过指针返回分配的pageID...
+  *page_id = AllocatePage();  // 通过指针返回分配的pageID...
   pages_[frame_id].page_id_ = *page_id;
   pages_[frame_id].pin_count_++;
   page_table_[pages_[frame_id].page_id_] = frame_id;
