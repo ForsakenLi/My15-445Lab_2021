@@ -121,7 +121,7 @@ class BufferPoolManagerInstance : public BufferPoolManager {
    */
   void ValidatePageId(page_id_t page_id) const;
 
-  void FlushPage(page_id_t page_id);
+  void FlushPageToDisk(page_id_t page_id);
 
   frame_id_t FetchFreeFrame();
 
@@ -135,7 +135,7 @@ class BufferPoolManagerInstance : public BufferPoolManager {
   std::atomic<page_id_t> next_page_id_ = instance_index_;
 
   /** Array of buffer pool pages. */
-  Page *pages_; // 在内存buffer bool中的所有页表数据, 用frame_id索引
+  Page *pages_;  // 在内存buffer bool中的所有页表数据, 用frame_id索引
   /** Pointer to the disk manager. */
   DiskManager *disk_manager_ __attribute__((__unused__));
   /** Pointer to the log manager. */
@@ -145,7 +145,7 @@ class BufferPoolManagerInstance : public BufferPoolManager {
   /** Replacer to find unpinned pages for replacement. */
   Replacer *replacer_;
   /** List of free pages. */
-  std::list<frame_id_t> free_list_; // buffer bool中的空闲frame
+  std::list<frame_id_t> free_list_;  // buffer bool中的空闲frame
   /** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */
   std::mutex latch_;
 };
