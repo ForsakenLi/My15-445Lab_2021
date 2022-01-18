@@ -14,6 +14,7 @@
 
 #include <list>
 #include <mutex>  // NOLINT
+#include <unordered_map>
 #include <vector>
 
 #include "buffer/replacer.h"
@@ -45,8 +46,18 @@ class LRUReplacer : public Replacer {
 
   size_t Size() override;
 
+  bool InLRUReplacer(frame_id_t frame_id);
+
  private:
-  // TODO(student): implement me!
+  // 所有非指针类型的成员会自动析构
+  std::mutex latch_{};
+
+  // 完全采用leetcode LRU写法， 一个装载页表的双向list，一个frame_id -> list entry的map
+  std::unordered_map<frame_id_t, std::list<frame_id_t>::iterator> cache_{};
+
+  std::list<frame_id_t> page_list_{};
+
+  size_t num_pages_;
 };
 
 }  // namespace bustub
