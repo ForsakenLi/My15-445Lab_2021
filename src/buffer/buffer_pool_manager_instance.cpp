@@ -105,6 +105,7 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
   if (iter != page_table_.end()) {
     replacer_->Pin(iter->second);
     pages_[iter->second].pin_count_++;
+    pages_[iter->second].is_dirty_ = true;
     return &pages_[iter->second];
   }
   frame_id_t frame_id = FetchFreeFrame();  // 1.2 && 2 && 3
@@ -115,6 +116,7 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
   replacer_->Pin(page_table_[page_id]);
   pages_[frame_id].pin_count_++;
   pages_[frame_id].page_id_ = page_id;
+  pages_[frame_id].is_dirty_ = false;
   // read in the page content from disk
   disk_manager_->ReadPage(page_id, pages_[frame_id].GetData());
   return &pages_[frame_id];
@@ -132,16 +134,17 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
   if (iter == page_table_.end()) {
     return true;
   }
-  if (pages_[iter->second].pin_count_ != 0) {
+  frame_id_t frame_id = iter->second;
+  if (pages_[frame_id].pin_count_ != 0) {
     // someone is using the page
     return false;
   }
   // Remove P from the page table, reset its metadata and return it to the free list.
-  free_list_.push_back(iter->second);
   page_table_.erase(page_id);
-  pages_[iter->second].is_dirty_ = false;
-  pages_[iter->second].page_id_ = INVALID_PAGE_ID;
-  memset(pages_[iter->second].GetData(), 0, PAGE_SIZE);
+  pages_[frame_id].is_dirty_ = false;
+  pages_[frame_id].page_id_ = INVALID_PAGE_ID;
+  memset(pages_[frame_id].GetData(), 0, PAGE_SIZE);
+  free_list_.push_back(frame_id);
   return true;
 }
 
