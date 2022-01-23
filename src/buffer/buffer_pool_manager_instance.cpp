@@ -38,7 +38,7 @@ BufferPoolManagerInstance::BufferPoolManagerInstance(size_t pool_size, uint32_t 
   // next_page_id_.store(0, std::__1::memory_order_relaxed);
   //  Initially, every page is in the free list.
   for (size_t i = 0; i < pool_size_; ++i) {
-    free_list_.emplace_back(static_cast<int>(i));  // emplace: 就地构造元素
+    free_list_.emplace_back(static_cast<int>(i));  // emplace: 就地构造元素, 通过右值引用实现
     // init page metadata
     pages_[i].pin_count_ = 0;
     pages_[i].is_dirty_ = false;
