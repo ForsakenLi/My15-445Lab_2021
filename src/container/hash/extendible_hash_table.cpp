@@ -26,7 +26,20 @@ template <typename KeyType, typename ValueType, typename KeyComparator>
 HASH_TABLE_TYPE::ExtendibleHashTable(const std::string &name, BufferPoolManager *buffer_pool_manager,
                                      const KeyComparator &comparator, HashFunction<KeyType> hash_fn)
     : buffer_pool_manager_(buffer_pool_manager), comparator_(comparator), hash_fn_(std::move(hash_fn)) {
-  //  implement me!
+  auto direct_page = buffer_pool_manager->NewPage(&directory_page_id_);
+  directory_page_ = reinterpret_cast<HashTableDirectoryPage *>(direct_page->GetData());
+  directory_page_->SetPageId(directory_page_id_);
+  // 初始化时分配两个size为1的page，分别对应0和1索引，depth设置为1(包括local和global)
+  page_id_t page_0_id;
+  page_id_t page_1_id;
+  auto page_0 = buffer_pool_manager->NewPage(&page_0_id);
+  auto page_1 = buffer_pool_manager->NewPage(&page_1_id);
+  directory_page_->SetBucketPageId(0, page_0_id);
+  directory_page_->SetBucketPageId(1, page_1_id);
+  directory_page_->SetLocalDepth(0, 1);
+  directory_page_->SetLocalDepth(1, 1);
+  directory_page_->IncrGlobalDepth(); // update global depth
+
 }
 
 /*****************************************************************************
@@ -46,7 +59,7 @@ uint32_t HASH_TABLE_TYPE::Hash(KeyType key) {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 inline uint32_t HASH_TABLE_TYPE::KeyToDirectoryIndex(KeyType key, HashTableDirectoryPage *dir_page) {
-  return 0;
+  return Hash(key) & dir_page->GetGlobalDepthMask();  // least-significant bits
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>

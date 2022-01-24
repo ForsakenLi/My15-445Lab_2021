@@ -39,6 +39,11 @@ erase调用导致iter指向的RB_Tree对应节点被删除了，后面使用的i
 
 
 ## Project 2: [extendible hash index][link2]
+
 [link2]: https://15445.courses.cs.cmu.edu/fall2021/project2/
 
-实现一个
+### 理解extendible hash
+
+和往年的实现B+树索引不同，今年Project 2变成了实现可拓展哈希索引，[golang的map][link3]本质上就是基于extendible hash实现的，
+
+[link3]: https://www.qcrao.com/2019/05/22/dive-into-go-map/
