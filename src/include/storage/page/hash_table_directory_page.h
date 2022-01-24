@@ -187,11 +187,11 @@ class HashTableDirectoryPage {
   void PrintDirectory();
 
  private:
-  page_id_t page_id_;
-  lsn_t lsn_;
-  uint32_t global_depth_{0};
-  uint8_t local_depths_[DIRECTORY_ARRAY_SIZE];
-  page_id_t bucket_page_ids_[DIRECTORY_ARRAY_SIZE];
+  page_id_t page_id_;                                // Self Page Id
+  lsn_t lsn_;                                        // Log sequence number (Used in Project 4)
+  uint32_t global_depth_{0};                         // Global depth of the directory
+  uint8_t local_depths_[DIRECTORY_ARRAY_SIZE];       // Array of local depths for each bucket (uint8)
+  page_id_t bucket_page_ids_[DIRECTORY_ARRAY_SIZE];  // Array of bucket page_id_t
 };
 
 }  // namespace bustub

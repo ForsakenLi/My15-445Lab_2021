@@ -1,6 +1,7 @@
 # My CMU15-445 Lab
 
-## Project 1: buffer bool
+## Project 1: [buffer bool manager][link1]
+[link1]: https://15445.courses.cs.cmu.edu/fall2021/project1/
 
 主要难点在于理解Pin/UnPin/Victim几个方法的含义, LRU就是一个map和一个双向链表和Leetcode那道题一样。接下来准备在学习本课程之余阅读 Effective Modern C++ && C++ Concurrency In Action, 学习现代Cpp的使用和Cpp的并发编程。
 
@@ -37,6 +38,7 @@ erase调用导致iter指向的RB_Tree对应节点被删除了，后面使用的i
 ![rank](img/p1_1.jpg)
 
 
-## Project 2: hash index
+## Project 2: [extendible hash index][link2]
+[link2]: https://15445.courses.cs.cmu.edu/fall2021/project2/
 
 实现一个
