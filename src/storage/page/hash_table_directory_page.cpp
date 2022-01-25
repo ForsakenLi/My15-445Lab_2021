@@ -63,7 +63,9 @@ void HashTableDirectoryPage::DecrLocalDepth(uint32_t bucket_idx) {
   local_depths_[bucket_idx]--;
 }
 
-uint32_t HashTableDirectoryPage::GetLocalHighBit(uint32_t bucket_idx) { return 0; }
+uint32_t HashTableDirectoryPage::GetLocalHighBit(uint32_t bucket_idx) {
+  // todo
+}
 
 /**
  * VerifyIntegrity - Use this for debugging but **DO NOT CHANGE**

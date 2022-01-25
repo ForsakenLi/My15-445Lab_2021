@@ -19,6 +19,7 @@
 #include "common/logger.h"
 #include "common/rid.h"
 #include "container/hash/extendible_hash_table.h"
+#include "storage/page/hash_table_bucket_page.h"
 
 namespace bustub {
 
@@ -26,20 +27,25 @@ template <typename KeyType, typename ValueType, typename KeyComparator>
 HASH_TABLE_TYPE::ExtendibleHashTable(const std::string &name, BufferPoolManager *buffer_pool_manager,
                                      const KeyComparator &comparator, HashFunction<KeyType> hash_fn)
     : buffer_pool_manager_(buffer_pool_manager), comparator_(comparator), hash_fn_(std::move(hash_fn)) {
+  directory_page_id_ = 0;
   auto direct_page = buffer_pool_manager->NewPage(&directory_page_id_);
-  directory_page_ = reinterpret_cast<HashTableDirectoryPage *>(direct_page->GetData());
-  directory_page_->SetPageId(directory_page_id_);
+  auto directory_page = reinterpret_cast<HashTableDirectoryPage *>(direct_page->GetData());
+  directory_page->SetPageId(directory_page_id_);
   // 初始化时分配两个size为1的page，分别对应0和1索引，depth设置为1(包括local和global)
   page_id_t page_0_id;
   page_id_t page_1_id;
-  auto page_0 = buffer_pool_manager->NewPage(&page_0_id);
-  auto page_1 = buffer_pool_manager->NewPage(&page_1_id);
-  directory_page_->SetBucketPageId(0, page_0_id);
-  directory_page_->SetBucketPageId(1, page_1_id);
-  directory_page_->SetLocalDepth(0, 1);
-  directory_page_->SetLocalDepth(1, 1);
-  directory_page_->IncrGlobalDepth(); // update global depth
+  buffer_pool_manager->NewPage(&page_0_id); // pin++
+  buffer_pool_manager->NewPage(&page_1_id);
+  directory_page->SetBucketPageId(0, page_0_id);
+  directory_page->SetBucketPageId(1, page_1_id);
+  directory_page->SetLocalDepth(0, 1);
+  directory_page->SetLocalDepth(1, 1);
+  directory_page->IncrGlobalDepth(); // update global depth
 
+  // 所有暂时不使用的页应该unpin交给LRUReplacer处理，再次使用时通过fetch获取
+  buffer_pool_manager_->UnpinPage(directory_page_id_, true);
+  buffer_pool_manager_->UnpinPage(page_0_id, false);
+  buffer_pool_manager_->UnpinPage(page_1_id, false);
 }
 
 /*****************************************************************************
@@ -64,17 +70,18 @@ inline uint32_t HASH_TABLE_TYPE::KeyToDirectoryIndex(KeyType key, HashTableDirec
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 inline uint32_t HASH_TABLE_TYPE::KeyToPageId(KeyType key, HashTableDirectoryPage *dir_page) {
-  return 0;
+  return dir_page->GetBucketPageId(KeyToDirectoryIndex(key, dir_page));
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 HashTableDirectoryPage *HASH_TABLE_TYPE::FetchDirectoryPage() {
-  return nullptr;
+  return reinterpret_cast<HashTableDirectoryPage *>(buffer_pool_manager_->FetchPage(directory_page_id_)->GetData());
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 HASH_TABLE_BUCKET_TYPE *HASH_TABLE_TYPE::FetchBucketPage(page_id_t bucket_page_id) {
-  return nullptr;
+  auto bucket_page = buffer_pool_manager_->FetchPage(bucket_page_id);
+  return reinterpret_cast<HASH_TABLE_BUCKET_TYPE *>(bucket_page->GetData());
 }
 
 /*****************************************************************************
@@ -82,7 +89,14 @@ HASH_TABLE_BUCKET_TYPE *HASH_TABLE_TYPE::FetchBucketPage(page_id_t bucket_page_i
  *****************************************************************************/
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_TYPE::GetValue(Transaction *transaction, const KeyType &key, std::vector<ValueType> *result) {
-  return false;
+  HashTableDirectoryPage *direct_page = FetchDirectoryPage();
+  auto bucket_page_id = KeyToPageId(key, direct_page);
+  HASH_TABLE_BUCKET_TYPE *bucket_page = FetchBucketPage(bucket_page_id);
+
+  bool ok = bucket_page->GetValue(key, comparator_, result);
+  buffer_pool_manager_->UnpinPage(directory_page_id_, false);
+  buffer_pool_manager_->UnpinPage(bucket_page_id, false);
+  return ok;
 }
 
 /*****************************************************************************
@@ -90,9 +104,39 @@ bool HASH_TABLE_TYPE::GetValue(Transaction *transaction, const KeyType &key, std
  *****************************************************************************/
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_TYPE::Insert(Transaction *transaction, const KeyType &key, const ValueType &value) {
-  return false;
+  HashTableDirectoryPage *direct_page = FetchDirectoryPage();
+  auto bucket_page_id = KeyToPageId(key, direct_page);
+  HASH_TABLE_BUCKET_TYPE *bucket_page = FetchBucketPage(bucket_page_id);
+  if (!bucket_page->IsFull()) {
+    // still have space
+    bool ok = bucket_page->Insert(key, value, comparator_);
+    buffer_pool_manager_->UnpinPage(directory_page_id_, false);
+    buffer_pool_manager_->UnpinPage(bucket_page_id, ok);
+    return ok;
+  }
+  // have to split
+  buffer_pool_manager_->UnpinPage(directory_page_id_, false);
+  buffer_pool_manager_->UnpinPage(bucket_page_id, false);
+  return SplitInsert(transaction, key, value);
 }
 
+/** SplitInsert 主要逻辑
+   * 如果需要插入的页已经Full了：
+   *    1。如果插入的页的local_depth已经等于global_depth:
+   *        global depth++
+   *    2。找到需要扩容的bucket page(称为桶A)，进行扩容操作:
+   *        - 假设桶A前缀为xxx, 新建一个前缀为1xxx的bucket page(称为桶B)
+   *        - 将桶A的local depth++，相当于此时桶A的前缀变为了0xxx
+   *        - 迭代桶A中的kv对，将前缀匹配1xxx的kv对移动到桶B
+   *    3。对于本轮未扩容的桶, 对它们进行迭代, 进行如下操作:
+   *        基于本桶当前的前缀xxx，生成一个1xxx前缀，将这个1xxx在directory中链接到本桶(惰性扩容)
+   *        因为当前的这个桶还不需要扩容，所以无论是hash(key)值低位为1xxx还是0xxx的，都会使用这个还无需扩容的桶
+   *
+   *        🤔一个比较极端的情况，如果以0为末尾的hash(key)值很少，在以1为末尾的桶已经翻倍扩容了3次的情况下
+   *        虽然directory中的索引表已经有4位了(即global_depth)，所有xxx0格式的前缀还是指向一个bucket
+   *        所以在执行2步骤中的扩容操作时，我们需要以local_depth为基础来进行复制，以上面这个极端情况为例子
+   *        当这个前缀为"0"，local_depth为1的桶扩容时，我们新建的桶编号为01，需要对之前的8个directory索引
+   */
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_TYPE::SplitInsert(Transaction *transaction, const KeyType &key, const ValueType &value) {
   return false;
