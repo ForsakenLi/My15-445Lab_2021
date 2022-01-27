@@ -27,25 +27,7 @@ template <typename KeyType, typename ValueType, typename KeyComparator>
 HASH_TABLE_TYPE::ExtendibleHashTable(const std::string &name, BufferPoolManager *buffer_pool_manager,
                                      const KeyComparator &comparator, HashFunction<KeyType> hash_fn)
     : buffer_pool_manager_(buffer_pool_manager), comparator_(comparator), hash_fn_(std::move(hash_fn)) {
-  directory_page_id_ = 0;
-  auto direct_page = buffer_pool_manager->NewPage(&directory_page_id_);
-  auto directory_page = reinterpret_cast<HashTableDirectoryPage *>(direct_page->GetData());
-  directory_page->SetPageId(directory_page_id_);
-  // 初始化时分配两个size为1的page，分别对应0和1索引，depth设置为1(包括local和global)
-  page_id_t page_0_id;
-  page_id_t page_1_id;
-  buffer_pool_manager->NewPage(&page_0_id); // pin++
-  buffer_pool_manager->NewPage(&page_1_id);
-  directory_page->SetBucketPageId(0, page_0_id);
-  directory_page->SetBucketPageId(1, page_1_id);
-  directory_page->SetLocalDepth(0, 1);
-  directory_page->SetLocalDepth(1, 1);
-  directory_page->IncrGlobalDepth(); // update global depth
 
-  // 所有暂时不使用的页应该unpin交给LRUReplacer处理，再次使用时通过fetch获取
-  buffer_pool_manager_->UnpinPage(directory_page_id_, true);
-  buffer_pool_manager_->UnpinPage(page_0_id, false);
-  buffer_pool_manager_->UnpinPage(page_1_id, false);
 }
 
 /*****************************************************************************

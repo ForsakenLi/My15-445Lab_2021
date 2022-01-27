@@ -137,6 +137,10 @@ class HashTableBucketPage {
    */
   void PrintBucket();
 
+  void Clear();
+
+  MappingType *GetArrayCopy();
+
  private:
   //  For more on BUCKET_ARRAY_SIZE see storage/page/hash_table_page_defs.h
   char occupied_[(BUCKET_ARRAY_SIZE - 1) / 8 + 1];

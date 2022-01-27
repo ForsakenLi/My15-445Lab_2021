@@ -29,10 +29,10 @@ bool HASH_TABLE_BUCKET_TYPE::GetValue(KeyType key, KeyComparator cmp, std::vecto
       continue;
     }
     if (cmp(key, KeyAt(i)) == 0) {
-      result -> push_back(ValueAt(i));
+      result->push_back(ValueAt(i));
     }
   }
-  return !result -> empty();
+  return !result->empty();
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
@@ -43,7 +43,7 @@ bool HASH_TABLE_BUCKET_TYPE::Insert(KeyType key, ValueType value, KeyComparator 
   std::vector<ValueType> result;
   GetValue(key, cmp, &result);
   bool already_have = false;
-  for (const auto& v : result) {
+  for (const auto &v : result) {
     if (v == value) {
       already_have = true;
       break;
@@ -180,6 +180,25 @@ void HASH_TABLE_BUCKET_TYPE::PrintBucket() {
   }
 
   LOG_INFO("Bucket Capacity: %lu, Size: %u, Taken: %u, Free: %u", BUCKET_ARRAY_SIZE, size, taken, free);
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void HashTableBucketPage<KeyType, ValueType, KeyComparator>::Clear() {
+  memset(occupied_, 0, sizeof(occupied_));
+  memset(readable_, 0, sizeof(readable_));
+  memset(array_, 0, sizeof(array_));
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+std::pair<KeyType, ValueType> *HashTableBucketPage<KeyType, ValueType, KeyComparator>::GetArrayCopy() {
+  uint32_t num = NumReadable();
+  MappingType *copy = new MappingType[num];
+  for (uint32_t i = 0, index = 0; i < BUCKET_ARRAY_SIZE; i++) {
+    if (IsReadable(i)) {
+      copy[index++] = array_[i];
+    }
+  }
+  return copy;
 }
 
 // DO NOT REMOVE ANYTHING BELOW THIS LINE
