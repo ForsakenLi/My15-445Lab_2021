@@ -39,11 +39,11 @@ class ReaderWriterLatch {
    */
   void WLock() {
     std::unique_lock<mutex_t> latch(mutex_);
-    while (writer_entered_) { // 如有其他写者占用需要等待前一个写者释放
+    while (writer_entered_) {  // 如有其他写者占用需要等待前一个写者释放
       reader_.wait(latch);
     }
     writer_entered_ = true;
-    while (reader_count_ > 0) { // 如有其他读者也需等待，同时writer_entered=true意味着不会有新的读者
+    while (reader_count_ > 0) {  // 如有其他读者也需等待，同时writer_entered=true意味着不会有新的读者
       writer_.wait(latch);
     }
   }
@@ -76,11 +76,11 @@ class ReaderWriterLatch {
     reader_count_--;
     if (writer_entered_) {
       if (reader_count_ == 0) {
-        writer_.notify_one(); // 当读者数目为0即可通知写者
+        writer_.notify_one();  // 当读者数目为0即可通知写者
       }
     } else {
       if (reader_count_ == MAX_READERS - 1) {
-        reader_.notify_one(); // 先前读者数目为满在自己release后-1即可通知还在等待的读者
+        reader_.notify_one();  // 先前读者数目为满在自己release后-1即可通知还在等待的读者
       }
     }
   }
