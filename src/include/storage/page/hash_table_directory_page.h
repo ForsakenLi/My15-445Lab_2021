@@ -162,19 +162,10 @@ class HashTableDirectoryPage {
   void DecrLocalDepth(uint32_t bucket_idx);
 
   /**
-   * Gets the high bit corresponding to the bucket's local depth.
-   * This is not the same as the bucket index itself.  This method
-   * is helpful for finding the pair, or "split image", of a bucket.
-   *
-   * @param bucket_idx bucket index to lookup
-   * @return the high bit corresponding to the bucket's local depth
-   */
-  uint32_t GetSplitBucketIndex(uint32_t bucket_idx);
-
-  /**
    * VerifyIntegrity
    *
    * Verify the following invariants:
+   *
    * (1) All LD <= GD.
    * (2) Each bucket has precisely 2^(GD - LD) pointers pointing to it.
    * (3) The LD is the same at each index with the same bucket_page_id
