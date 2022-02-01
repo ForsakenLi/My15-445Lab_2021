@@ -134,7 +134,9 @@ class ExtendibleHashTable {
    * @param bucket_page_id the page_id to fetch
    * @return a pointer to a bucket page
    */
-  HASH_TABLE_BUCKET_TYPE *FetchBucketPage(page_id_t bucket_page_id);
+  Page *FetchBucketPage(page_id_t bucket_page_id);
+
+  HASH_TABLE_BUCKET_TYPE *RetrieveBucketPage(Page *page);
 
   /**
    * Performs insertion with an optional bucket splitting.
@@ -159,16 +161,20 @@ class ExtendibleHashTable {
    * @param key the key that was removed
    * @param value the value that was removed
    */
-  void Merge(Transaction *transaction, const KeyType &key, const ValueType &value);
+  void Merge(Transaction *transaction, uint32_t target_bucket_index);
+
+  Page *AssertPage(Page *page);
 
   // member variables
-  page_id_t directory_page_id_;
+  page_id_t directory_page_id_ = INVALID_PAGE_ID;
   BufferPoolManager *buffer_pool_manager_;
   KeyComparator comparator_;
 
   // Readers includes inserts and removes, writers are splits and merges
   ReaderWriterLatch table_latch_;
   HashFunction<KeyType> hash_fn_;
+
+  std::mutex mu_;
 };
 
 }  // namespace bustub
