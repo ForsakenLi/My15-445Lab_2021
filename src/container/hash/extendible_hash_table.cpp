@@ -118,6 +118,7 @@ bool HASH_TABLE_TYPE::GetValue(Transaction *transaction, const KeyType &key, std
 
 /*****************************************************************************
  * INSERTION
+ * 当写入时仅需为dictionary加入读锁，为插入的目标bucket加入写锁
  *****************************************************************************/
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_TYPE::Insert(Transaction *transaction, const KeyType &key, const ValueType &value) {

@@ -68,8 +68,6 @@ extendible hash可以通过桶的分裂或合并来适应数据库大小的变�
 
 ### Project 实现
 
-整个项目我觉得难度非常之大，满分通过很困难，而且中文互联网上关于extendible hash的资料非常少，中途一度想换成老版本的B+tree来实现。。。
-
 在本Project中，课程设计三部分需要实现的内容: dictionary_page, bucket_page和extendible_hash_table本身，以及通过RWMutex实现的并发控制。
 
 以下是几个实现中遇到的值得记录的问题:
@@ -96,7 +94,7 @@ extendible hash在扩容时采用的是分裂的方法, 即将原先前缀为xxx
 
 - Merge的条件检查
 
-发起Merge调用前，Remove会检查Merge的条件是否满足，但在Merge时，我们首先需要获取整个hash表的写锁，通过查看写锁的代码可以观察到写锁在获取时需要等待所有读锁释放，并根据写者获取mutex的顺序来依次唤醒wait的写锁，因此我们不能确定在获取到写锁后，Merge的条件是否还满足。所以在获取到写锁后，还需要再次检查Merge的条件，如target_bucket是否还为空，target_bucket和合并目标的image_bucket的本地深度是否相同，满足后才能进行合并操作。
+发起Merge调用前，Remove会检查Merge的条件是否满足，但在Merge时，我们首先需要获取hash dictionary的写锁，通过查看写锁的代码可以观察到写锁在获取时需要等待所有读锁释放，并根据写者获取mutex的顺序来依次唤醒wait的写锁，因此我们不能确定在获取到写锁后，Merge的条件是否还满足。所以在获取到写锁后，还需要再次检查Merge的条件，如target_bucket是否还为空，target_bucket和合并目标的image_bucket的本地深度是否相同，满足后才能进行合并操作。
 
 - 在Merge前已经有多个bucket指向target_bucket/image_bucket
 
