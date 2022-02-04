@@ -68,7 +68,7 @@ extendible hash可以通过桶的分裂或合并来适应数据库大小的变�
 
 ### Project 实现
 
-在本Project中，课程设计三部分需要实现的内容: dictionary_page, bucket_page和extendible_hash_table本身，以及通过RWMutex实现的并发控制。
+在本Project中，课程设计三部分需要实现的内容: dictionary_page, bucket_page和extendible_hash_table本身，以及通过dictionary和bucket的RWMutex实现的并发控制。
 
 以下是几个实现中遇到的值得记录的问题:
 
@@ -104,3 +104,18 @@ extendible hash在扩容时采用的是分裂的方法, 即将原先前缀为xxx
 
 ![rank](img/p2_2.jpg)
 
+## Project 3: [query execution][link3]
+
+[link3]: https://15445.courses.cs.cmu.edu/fall2021/project3/
+
+### 对象含义
+
+ExecutorContext: 查询的上下文，所有和数据库相关的(Catalog)信息及Transaction、BufferBool等都可通过该对象交互。
+
+Plan: 对于每一种Executor都有其对应类型的Plan Node，控制了该类型的Executor执行逻辑。
+
+Catalog: 一个数据库维护一个Catalog，以跟踪关于数据库的元数据。与Catalog交互，以查询有关表、索引及其模式的信息。
+
+TableInfo: Table的元数据，包括一个指向table的unique_ptr和属于该table的schema。
+
+TableHeap: 提供了对于该table插入、查询和删除tuple的方法，table_heap仅存储了buffer_bool_manager的指针和存储该表的首个page_id，通过此来访问table。
