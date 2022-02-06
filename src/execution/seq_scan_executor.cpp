@@ -35,7 +35,7 @@ bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
 
   std::vector<Value> values;
   for (size_t i = 0; i < plan_->OutputSchema()->GetColumnCount(); i++) {
-    values.push_back(plan_->OutputSchema()->GetColumn(i).GetExpr()->Evaluate(tuple, schema_));
+    values.emplace_back(plan_->OutputSchema()->GetColumn(i).GetExpr()->Evaluate(tuple, schema_));
   }
 
   ++iter_;
