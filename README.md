@@ -32,7 +32,7 @@ erase调用导致iter指向的RB_Tree对应节点被删除了，后面使用的i
 
 在一开始，我认为dirty位的更新逻辑应该是根据unpin返回时，根据用户给定的is_dirty是dirty就在pages_里保存为dirty=true，不是就保存dirty=false。后来我发现这种方式是错误的，因为假如后续一个用户读取一个在内存中的已经被标记为脏的页时，假如其没有对该页进行修改，那么其unpin这个页时的is_dirty参数为false，如果这个false覆盖了原先的is_dirty=true,
 就会导致先前的修改丢失，所以需要加上一个判断, 仅有在unpin时回传的参数is_dirty为true时才进行覆盖。
-
+``
 最终排名:
 ![rank](img/p1_1.jpg)
 
