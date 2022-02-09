@@ -17,11 +17,30 @@ namespace bustub {
 
 UpdateExecutor::UpdateExecutor(ExecutorContext *exec_ctx, const UpdatePlanNode *plan,
                                std::unique_ptr<AbstractExecutor> &&child_executor)
-    : AbstractExecutor(exec_ctx) {}
+    : AbstractExecutor(exec_ctx),
+      plan_(plan),
+      table_info_(exec_ctx->GetCatalog()->GetTable(plan->TableOid())),
+      child_executor_(std::move(child_executor)),
+      table_heap_(table_info_->table_.get()) {}
 
-void UpdateExecutor::Init() {}
+void UpdateExecutor::Init() { child_executor_->Init(); }
 
-bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) { return false; }
+bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
+  while (child_executor_->Next(tuple, rid)) {
+    *tuple = GenerateUpdatedTuple(*tuple);
+    if (!table_heap_->UpdateTuple(*tuple, *rid, exec_ctx_->GetTransaction())) {
+      LOG_DEBUG("Update tuple failed");
+      return false;
+    }
+
+    for (const auto &index : exec_ctx_->GetCatalog()->GetTableIndexes(table_info_->name_)) {
+      index->index_->InsertEntry(
+          tuple->KeyFromTuple(table_info_->schema_, *index->index_->GetKeySchema(), index->index_->GetKeyAttrs()), *rid,
+          exec_ctx_->GetTransaction());
+    }
+  }
+  return false;
+}
 
 Tuple UpdateExecutor::GenerateUpdatedTuple(const Tuple &src_tuple) {
   const auto &update_attrs = plan_->GetUpdateAttr();

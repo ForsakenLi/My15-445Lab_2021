@@ -65,7 +65,7 @@ class TransactionManager {
 
   /**
    * Locates and returns the transaction with the given transaction ID.
-   * @param txn_id the id of the transaction to be found, it must exist!
+   * @param txn_id the id of the transaction to be found, it must Exist!
    * @return the transaction with the given transaction id
    */
   static Transaction *GetTransaction(txn_id_t txn_id) {

@@ -44,9 +44,9 @@ class TableIterator {
 
   Tuple *operator->();
 
-  TableIterator &operator++();
+  TableIterator &operator++();  // ++iter
 
-  TableIterator operator++(int);
+  TableIterator operator++(int);  // iter++
 
   TableIterator &operator=(const TableIterator &other) {
     table_heap_ = other.table_heap_;

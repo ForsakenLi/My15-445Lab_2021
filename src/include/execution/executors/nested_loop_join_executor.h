@@ -13,6 +13,7 @@
 #pragma once
 
 #include <memory>
+#include <queue>
 #include <utility>
 
 #include "execution/executor_context.h"
@@ -24,6 +25,10 @@ namespace bustub {
 
 /**
  * NestedLoopJoinExecutor executes a nested-loop JOIN on two tables.
+ * 对于连接外表中的每个元组，你应该考虑连接内表中的每个元组，如果连接谓词得到满足，就发出一个输出元组。
+ * 1. 可先使用predicate过滤outer table
+ * 2. 尽可能将outer table缓存在mem中，以减少disk IO
+ * 3. inner table使用index
  */
 class NestedLoopJoinExecutor : public AbstractExecutor {
  public:
@@ -55,6 +60,9 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
  private:
   /** The NestedLoopJoin plan node to be executed. */
   const NestedLoopJoinPlanNode *plan_;
+  const std::unique_ptr<AbstractExecutor> left_executor_;
+  const std::unique_ptr<AbstractExecutor> right_executor_;
+  std::queue<Tuple> loop_res_{};
 };
 
 }  // namespace bustub
