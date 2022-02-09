@@ -41,7 +41,7 @@ bool InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
     }
   } else {
     // Insert from plan local
-    if (iter_ == plan_->RawValues().end()) {  // not exist value
+    if (iter_ == plan_->RawValues().end()) {  // not Exist value
       return false;
     }
     *tuple = Tuple(*iter_, &table_info_->schema_);

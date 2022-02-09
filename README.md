@@ -119,3 +119,6 @@ Catalog: 一个数据库维护一个Catalog，以跟踪关于数据库的元数�
 TableInfo: Table的元数据，包括一个指向table的unique_ptr和属于该table的schema。
 
 TableHeap: 提供了对于该table插入、查询和删除tuple的方法，table_heap仅存储了buffer_bool_manager的指针和存储该表的首个page_id，通过此来访问table。
+
+// pending
+

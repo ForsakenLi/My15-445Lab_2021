@@ -40,7 +40,7 @@ DiskManager::DiskManager(const std::string &db_file)
   log_name_ = file_name_.substr(0, n) + ".log";
 
   log_io_.open(log_name_, std::ios::binary | std::ios::in | std::ios::app | std::ios::out);
-  // directory or file does not exist
+  // directory or file does not Exist
   if (!log_io_.is_open()) {
     log_io_.clear();
     // create a new file
@@ -55,7 +55,7 @@ DiskManager::DiskManager(const std::string &db_file)
 
   std::scoped_lock scoped_db_io_latch(db_io_latch_);
   db_io_.open(db_file, std::ios::binary | std::ios::in | std::ios::out);
-  // directory or file does not exist
+  // directory or file does not Exist
   if (!db_io_.is_open()) {
     db_io_.clear();
     // create a new file

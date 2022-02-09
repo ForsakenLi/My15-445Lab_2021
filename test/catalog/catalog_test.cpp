@@ -37,7 +37,7 @@ TEST(CatalogTest, DISABLED_CreateTable1) {
 
   const std::string table_name{"foobar"};
 
-  // The table shouldn't exist in the catalog yet
+  // The table shouldn't Exist in the catalog yet
   EXPECT_EQ(Catalog::NULL_TABLE_INFO, catalog->GetTable(table_name));
 
   // Construct a new table and add it to the catalog
@@ -68,7 +68,7 @@ TEST(CatalogTest, DISABLED_CreateTable2) {
 
   const std::string table_name{"foobar"};
 
-  // The table shouldn't exist in the catalog yet
+  // The table shouldn't Exist in the catalog yet
   EXPECT_EQ(Catalog::NULL_TABLE_INFO, catalog->GetTable(table_name));
 
   // Construct a new table and add it to the catalog
@@ -96,7 +96,7 @@ TEST(CatalogTest, DISABLED_CreateTable3) {
 
   const std::string table_name{"foobar"};
 
-  // The table shouldn't exist in the catalog yet
+  // The table shouldn't Exist in the catalog yet
   EXPECT_EQ(Catalog::NULL_TABLE_INFO, catalog->GetTable(table_name));
 
   // Construct a new table and add it to the catalog
@@ -128,7 +128,7 @@ TEST(CatalogTest, DISABLED_CreateTableTest) {
 
   const std::string table_name{"foobar"};
 
-  // The table shouldn't exist in the catalog yet.
+  // The table shouldn't Exist in the catalog yet.
   EXPECT_EQ(Catalog::NULL_TABLE_INFO, catalog->GetTable(table_name));
 
   // Put the table into the catalog.
@@ -192,7 +192,7 @@ TEST(CatalogTest, DISABLED_CreateIndex1) {
   Schema schema{columns};
   EXPECT_NE(Catalog::NULL_TABLE_INFO, catalog->CreateTable(nullptr, table_name, schema));
 
-  // No indexes should exist for the table
+  // No indexes should Exist for the table
   const auto table_indexes1 = catalog->GetTableIndexes(table_name);
   EXPECT_TRUE(table_indexes1.empty());
 
@@ -234,7 +234,7 @@ TEST(CatalogTest, DISABLED_CreateIndex2) {
   Schema schema{columns};
   EXPECT_NE(Catalog::NULL_TABLE_INFO, catalog->CreateTable(nullptr, table_name, schema));
 
-  // No indexes should exist for the table
+  // No indexes should Exist for the table
   const auto table_indexes1 = catalog->GetTableIndexes(table_name);
   EXPECT_TRUE(table_indexes1.empty());
 

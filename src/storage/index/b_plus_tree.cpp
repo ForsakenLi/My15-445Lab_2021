@@ -69,7 +69,7 @@ void BPLUSTREE_TYPE::StartNewTree(const KeyType &key, const ValueType &value) {}
 /*
  * Insert constant key & value pair into leaf page
  * User needs to first find the right leaf page as insertion target, then look
- * through leaf page to see whether insert key exist or not. If exist, return
+ * through leaf page to see whether insert key exist or not. If Exist, return
  * immdiately, otherwise insert entry. Remember to deal with split if necessary.
  * @return: since we only support unique key, if user try to insert duplicate
  * keys return false, otherwise return true.

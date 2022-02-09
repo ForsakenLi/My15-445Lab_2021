@@ -80,7 +80,7 @@ class ParallelBufferPoolManager : public BufferPoolManager {
   /**
    * Deletes a page from the buffer pool.
    * @param page_id id of page to be deleted
-   * @return false if the page exists but could not be deleted, true if the page didn't exist or deletion succeeded
+   * @return false if the page exists but could not be deleted, true if the page didn't Exist or deletion succeeded
    */
   bool DeletePgImp(page_id_t page_id) override;
 

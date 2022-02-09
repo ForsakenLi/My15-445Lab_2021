@@ -52,7 +52,7 @@ class Schema {
    * Looks up and returns the index of the first column in the schema with the specified name.
    * If multiple columns have the same name, the first such index is returned.
    * @param col_name name of column to look for
-   * @return the index of a column with the given name, throws an exception if it does not exist
+   * @return the index of a column with the given name, throws an exception if it does not Exist
    */
   uint32_t GetColIdx(const std::string &col_name) const {
     for (uint32_t i = 0; i < columns_.size(); ++i) {
@@ -60,7 +60,7 @@ class Schema {
         return i;
       }
     }
-    UNREACHABLE("Column does not exist");
+    UNREACHABLE("Column does not Exist");
   }
 
   /** @return the indices of non-inlined columns */

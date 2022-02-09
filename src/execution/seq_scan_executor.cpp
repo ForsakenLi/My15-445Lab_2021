@@ -21,9 +21,7 @@ SeqScanExecutor::SeqScanExecutor(ExecutorContext *exec_ctx, const SeqScanPlanNod
       table_heap_(exec_ctx->GetCatalog()->GetTable(plan_->GetTableOid())->table_.get()),
       iter_(table_heap_->Begin(exec_ctx_->GetTransaction())) {}
 
-void SeqScanExecutor::Init() {
-  iter_ = table_heap_->Begin(exec_ctx_->GetTransaction());
-}
+void SeqScanExecutor::Init() { iter_ = table_heap_->Begin(exec_ctx_->GetTransaction()); }
 
 bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
   if (iter_ == table_heap_->End()) {

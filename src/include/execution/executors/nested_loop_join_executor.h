@@ -12,8 +12,8 @@
 
 #pragma once
 
-#include <queue>
 #include <memory>
+#include <queue>
 #include <utility>
 
 #include "execution/executor_context.h"

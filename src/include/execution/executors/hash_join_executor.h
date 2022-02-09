@@ -14,18 +14,16 @@
 
 #include <memory>
 #include <queue>
-#include <vector>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
+#include "common/util/hash_util.h"
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/expressions/abstract_expression.h"
 #include "execution/plans/hash_join_plan.h"
 #include "storage/table/tuple.h"
-#include "common/util/hash_util.h"
-
-
 
 namespace bustub {
 
@@ -54,12 +52,10 @@ namespace bustub {
 
 class MyHashTable {
  public:
-  bool exist(const MyHashKey &key) {
-    return map_.find(key) != map_.cend();
-  }
+  bool Exist(const MyHashKey &key) { return map_.find(key) != map_.cend(); }
 
-  void insert(const MyHashKey &key, const Tuple &tuple) {
-    if (exist(key)) {
+  void Insert(const MyHashKey &key, const Tuple &tuple) {
+    if (Exist(key)) {
       map_[key].emplace_back(tuple);
       return;
     }
@@ -114,4 +110,3 @@ class HashJoinExecutor : public AbstractExecutor {
 };
 
 }  // namespace bustub
-

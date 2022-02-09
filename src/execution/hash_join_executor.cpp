@@ -30,7 +30,7 @@ void HashJoinExecutor::Init() {
   RID outer_rid;
   //! prepare for outer table hash
   while (left_child_->Next(&outer_tuple, &outer_rid)) {
-    my_map_.insert(GetMyJoinKey(&outer_tuple, true), outer_tuple);
+    my_map_.Insert(GetMyJoinKey(&outer_tuple, true), outer_tuple);
   }
 }
 
@@ -48,7 +48,7 @@ bool HashJoinExecutor::Next(Tuple *tuple, RID *rid) {
     return false;
   }
 
-  if (!my_map_.exist(GetMyJoinKey(&inner_tuple, false))) {
+  if (!my_map_.Exist(GetMyJoinKey(&inner_tuple, false))) {
     return Next(tuple, rid);
   }
 

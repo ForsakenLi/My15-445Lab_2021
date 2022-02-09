@@ -78,7 +78,7 @@ TEST(HashTableTest, SampleTest) {
 
   ht.VerifyIntegrity();
 
-  // look for a key that does not exist
+  // look for a key that does not Exist
   std::vector<int> res;
   ht.GetValue(nullptr, 20, &res);
   EXPECT_EQ(0, res.size());

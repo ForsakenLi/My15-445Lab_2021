@@ -26,7 +26,8 @@ DeleteExecutor::DeleteExecutor(ExecutorContext *exec_ctx, const DeletePlanNode *
 
 void DeleteExecutor::Init() { child_executor_->Init(); }
 
-bool DeleteExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) { while (child_executor_->Next(tuple, rid)) {
+bool DeleteExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
+  while (child_executor_->Next(tuple, rid)) {
     if (!table_heap_->MarkDelete(*rid, exec_ctx_->GetTransaction())) {
       LOG_DEBUG("Delete failed");
       return false;

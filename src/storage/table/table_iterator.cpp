@@ -33,7 +33,7 @@ Tuple *TableIterator::operator->() {
   return tuple_;
 }
 
-TableIterator &TableIterator::operator++() {    // ++iter
+TableIterator &TableIterator::operator++() {  // ++iter
   BufferPoolManager *buffer_pool_manager = table_heap_->buffer_pool_manager_;
   auto cur_page = static_cast<TablePage *>(buffer_pool_manager->FetchPage(tuple_->rid_.GetPageId()));
   cur_page->RLatch();
