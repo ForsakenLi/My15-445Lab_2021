@@ -125,6 +125,7 @@ bool TableHeap::UpdateTuple(const Tuple &tuple, const RID &rid, Transaction *txn
   buffer_pool_manager_->UnpinPage(page->GetTablePageId(), is_updated);
   // Update the transaction's write set.
   if (is_updated && txn->GetState() != TransactionState::ABORTED) {
+    // the tuple we put into the write_set is old tuple
     txn->GetWriteSet()->emplace_back(rid, WType::UPDATE, old_tuple, this);
   }
   return is_updated;

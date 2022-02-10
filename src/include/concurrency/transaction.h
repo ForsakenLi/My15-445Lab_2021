@@ -27,14 +27,14 @@
 namespace bustub {
 
 /**
- * Transaction states for 2PL:
+ * Transaction states for 2PL[unrepeatable read, serializable]:
  *
  *     _________________________
  *    |                         v
  * GROWING -> SHRINKING -> COMMITTED   ABORTED
  *    |__________|________________________^
  *
- * Transaction states for Non-2PL:
+ * Transaction states for Non-2PL[uncommitted read, committed read]:
  *     __________
  *    |          v
  * GROWING  -> COMMITTED     ABORTED

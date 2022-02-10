@@ -28,6 +28,7 @@ Transaction *TransactionManager::Begin(Transaction *txn, IsolationLevel isolatio
   global_txn_latch_.RLock();
 
   if (txn == nullptr) {
+    // the new transaction have bigger txn_id
     txn = new Transaction(next_txn_id_++, isolation_level);
   }
   txn_map_mutex.lock();
@@ -61,9 +62,9 @@ void TransactionManager::Commit(Transaction *txn) {
 void TransactionManager::Abort(Transaction *txn) {
   txn->SetState(TransactionState::ABORTED);
   // Rollback before releasing the lock.
-  auto table_write_set = txn->GetWriteSet();
+  auto table_write_set = txn->GetWriteSet();  // is deque not set
   while (!table_write_set->empty()) {
-    auto &item = table_write_set->back();
+    auto &item = table_write_set->back();  // undo from back to front
     auto table = item.table_;
     if (item.wtype_ == WType::DELETE) {
       table->RollbackDelete(item.rid_, txn);
@@ -71,6 +72,7 @@ void TransactionManager::Abort(Transaction *txn) {
       // Note that this also releases the lock when holding the page latch.
       table->ApplyDelete(item.rid_, txn);
     } else if (item.wtype_ == WType::UPDATE) {
+      // the item.tuple_ is the old tuple
       table->UpdateTuple(item.tuple_, item.rid_, txn);
     }
     table_write_set->pop_back();
