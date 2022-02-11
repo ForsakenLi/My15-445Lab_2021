@@ -109,6 +109,8 @@ class LockManager {
 
   bool UpgradeSpin(Transaction *txn, LockRequestQueue *lock_req_queue);
 
+  bool ExclusiveSpin(Transaction *txn, LockRequestQueue *lock_req_queue);
+
   std::mutex latch_;
 
   /** Lock table for lock requests. */
