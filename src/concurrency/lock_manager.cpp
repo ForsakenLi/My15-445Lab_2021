@@ -203,8 +203,7 @@ bool LockManager::UpgradeSpin(Transaction *txn, LockRequestQueue *lock_req_queue
   // Wound-Wait: young wait for old
   // abort every txn younger than me, until no more txn ahead of me
   for (auto iter = lock_req_queue->request_queue_.begin(); iter->txn_id_ != txn->GetTransactionId(); ++iter) {
-    if (txn->GetTransactionId() < iter->txn_id_)  // younger txn have bigger txn_id
-    {
+    if (txn->GetTransactionId() < iter->txn_id_) {  // younger txn have bigger txn_id
       auto *younger = TransactionManager::GetTransaction(iter->txn_id_);
       if (younger->GetState() != TransactionState::ABORTED) {
         younger->SetState(TransactionState::ABORTED);
@@ -229,8 +228,7 @@ bool LockManager::ExclusiveSpin(Transaction *txn, LockRequestQueue *lock_req_que
   bool have_abort = false;
   bool need_spin = false;
   for (auto iter = lock_req_queue->request_queue_.begin(); iter->txn_id_ != txn->GetTransactionId(); ++iter) {
-    if (txn->GetTransactionId() < iter->txn_id_)  // younger txn have bigger txn_id
-    {
+    if (txn->GetTransactionId() < iter->txn_id_) {  // younger txn have bigger txn_id
       // abort every txn younger than me
       auto *younger = TransactionManager::GetTransaction(iter->txn_id_);
       if (younger->GetState() != TransactionState::ABORTED) {

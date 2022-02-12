@@ -54,7 +54,7 @@ void TransactionManager::Commit(Transaction *txn) {
   write_set->clear();
 
   // Release all the locks.
-  ReleaseLocks(txn);
+  ReleaseLocks(txn);  //! 事务的所有锁在commit时会被此函数释放, 因此对于可重复读, 不需要我们自己unlock
   // Release the global transaction latch.
   global_txn_latch_.RUnlock();
 }
