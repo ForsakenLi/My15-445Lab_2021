@@ -79,6 +79,7 @@ void TransactionManager::Abort(Transaction *txn) {
   }
   table_write_set->clear();
   // Rollback index updates
+  //! 可以看到，在Abort时会执行对indexWriteSet的逆向操作，恢复先前的index
   auto index_write_set = txn->GetIndexWriteSet();
   while (!index_write_set->empty()) {
     auto &item = index_write_set->back();

@@ -44,7 +44,7 @@ class ReaderWriterLatch {
     }
     writer_entered_ = true;
     while (reader_count_ > 0) {  // 如有其他读者也需等待，同时writer_entered=true意味着不会有新的读者
-      writer_.wait(latch);  // 写者条件变量仅在所有读者退出时(reader_count == 0)才会结束等待
+      writer_.wait(latch);       // 写者条件变量仅在所有读者退出时(reader_count == 0)才会结束等待
     }
   }
 
@@ -59,7 +59,7 @@ class ReaderWriterLatch {
   void WUnlock() {
     std::lock_guard<mutex_t> guard(mutex_);
     writer_entered_ = false;
-    reader_.notify_all(); // 写锁释放的是reader_的条件变量
+    reader_.notify_all();  // 写锁释放的是reader_的条件变量
   }
 
   /**

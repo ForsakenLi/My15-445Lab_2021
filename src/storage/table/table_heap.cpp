@@ -51,6 +51,7 @@ bool TableHeap::InsertTuple(const Tuple &tuple, RID *rid, Transaction *txn) {
   cur_page->WLatch();
   // Insert into the first page with enough space. If no such page exists, create a new page and insert into that.
   // INVARIANT: cur_page is WLatched if you leave the loop normally.
+  //! Note this function
   while (!cur_page->InsertTuple(tuple, rid, txn, lock_manager_, log_manager_)) {
     auto next_page_id = cur_page->GetNextPageId();
     // If the next page is a valid page,
@@ -154,6 +155,7 @@ void TableHeap::RollbackDelete(const RID &rid, Transaction *txn) {
   buffer_pool_manager_->UnpinPage(page->GetTablePageId(), true);
 }
 
+//! use rid(saved by index) to get the tuple
 bool TableHeap::GetTuple(const RID &rid, Tuple *tuple, Transaction *txn) {
   // Find the page which contains the tuple.
   auto page = static_cast<TablePage *>(buffer_pool_manager_->FetchPage(rid.GetPageId()));
