@@ -29,6 +29,7 @@ bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
   }
 
   *tuple = *iter_;
+  // The output of sequential scan is a copy of each matched tuple and its original record identifier (RID)
   *rid = tuple->GetRid();
   LockManager *lock_manager = GetExecutorContext()->GetLockManager();
   Transaction *txn = GetExecutorContext()->GetTransaction();
@@ -36,6 +37,7 @@ bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
     // if isolation level require s_lock but failed to get
     throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
   }
+
   std::vector<Value> values;
   for (size_t i = 0; i < plan_->OutputSchema()->GetColumnCount(); i++) {
     values.emplace_back(plan_->OutputSchema()->GetColumn(i).GetExpr()->Evaluate(tuple, schema_));

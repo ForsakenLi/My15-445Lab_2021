@@ -35,6 +35,9 @@ void InsertExecutor::Init() {
 bool InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
   std::vector<Tuple> tuples;
 
+  LockManager *lock_manager = GetExecutorContext()->GetLockManager();
+  Transaction *txn = GetExecutorContext()->GetTransaction();
+
   if (!plan_->IsRawInsert()) {
     if (!child_executor_->Next(tuple, rid)) {
       return false;
@@ -48,15 +51,33 @@ bool InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
     iter_++;
   }
 
+  //! 由于insert插入tuple并不会造成脏读和不可重复读, 会造成幻读问题
+  //! 幻读需要通过index_lock解决，而本Lab并未提供这样的机制也没有要求解决幻读问题（本实验没有要求实现Serializable）
+  //! 因此可以不需要将tuple写入的操作写入x_lock临界区以提高程序效率
   if (!table_heap_->InsertTuple(*tuple, rid, exec_ctx_->GetTransaction())) {
     LOG_DEBUG("INSERT FAIL");
     return false;
   }
-  //! 更新索引信息
+
+  // if have s_lock, upgrade it, else apply it
+  if (txn->IsSharedLocked(*rid)) {
+    if (!lock_manager->LockUpgrade(txn, *rid)) {
+      throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
+    }
+  } else {
+    if (!lock_manager->LockExclusive(txn, *rid)) {
+      throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
+    }
+  }
+
   for (const auto &index : catalog_->GetTableIndexes(table_info_->name_)) {
     index->index_->InsertEntry(
         tuple->KeyFromTuple(table_info_->schema_, *index->index_->GetKeySchema(), index->index_->GetKeyAttrs()), *rid,
         exec_ctx_->GetTransaction());
+  }
+
+  if (txn->GetIsolationLevel() != IsolationLevel::REPEATABLE_READ && !lock_manager->Unlock(txn, *rid)) {
+    throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
   }
   return Next(tuple, rid);
 }
