@@ -96,6 +96,7 @@ void TransactionManager::Abort(Transaction *txn) {
     } else if (item.wtype_ == WType::UPDATE) {
       // Delete the new key and insert the old key
       index_info->index_->DeleteEntry(new_key, item.rid_, txn);
+      // 在回滚时使用的是old_tuple，需要我们在Update index时自己保存，默认的构造函数没有提供
       auto old_key = item.old_tuple_.KeyFromTuple(table_info->schema_, *(index_info->index_->GetKeySchema()),
                                                   index_info->index_->GetKeyAttrs());
       index_info->index_->InsertEntry(old_key, item.rid_, txn);

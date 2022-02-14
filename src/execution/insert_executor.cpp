@@ -69,7 +69,7 @@ bool InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
   }
 
   // because insert index may cause the index bucket page split(for extendible hash table), so it must be x_lock
-  for (const auto &index : catalog_->GetTableIndexes(table_info_->name_)) {
+  for (const auto &index : catalog_->GetTableIndexes(table_info_->name_)) {  // 一张表可以建立多个索引
     index->index_->InsertEntry(
         tuple->KeyFromTuple(table_info_->schema_, *index->index_->GetKeySchema(), index->index_->GetKeyAttrs()), *rid,
         exec_ctx_->GetTransaction());

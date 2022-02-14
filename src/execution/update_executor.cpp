@@ -39,7 +39,7 @@ bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
         throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
       }
     }
-
+    Tuple *old_tuple = tuple;
     *tuple = GenerateUpdatedTuple(*tuple);
     if (!table_heap_->UpdateTuple(*tuple, *rid, exec_ctx_->GetTransaction())) {
       LOG_DEBUG("Update tuple failed");
@@ -51,8 +51,10 @@ bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
           tuple->KeyFromTuple(table_info_->schema_, *index->index_->GetKeySchema(), index->index_->GetKeyAttrs()), *rid,
           exec_ctx_->GetTransaction());
 
-      txn->GetIndexWriteSet()->emplace_back(
-          IndexWriteRecord(*rid, table_info_->oid_, WType::UPDATE, *tuple, index->index_oid_, exec_ctx_->GetCatalog()));
+      auto undo_index_rec =
+          IndexWriteRecord(*rid, table_info_->oid_, WType::UPDATE, *tuple, index->index_oid_, exec_ctx_->GetCatalog());
+      undo_index_rec.old_tuple_ = *old_tuple;
+      txn->GetIndexWriteSet()->emplace_back(undo_index_rec);
     }
 
     if (txn->GetIsolationLevel() != IsolationLevel::REPEATABLE_READ && !lock_manager->Unlock(txn, *rid)) {
