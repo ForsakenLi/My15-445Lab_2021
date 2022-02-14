@@ -1,6 +1,6 @@
 # My CMU15-445 Lab
 
-## Project 1: [buffer bool manager][link1]
+## Project 1: [buffer pool manager][link1]
 [link1]: https://15445.courses.cs.cmu.edu/fall2021/project1/
 
 主要难点在于理解Pin/UnPin/Victim几个方法的含义, LRU就是一个map和一个双向链表和Leetcode那道题一样。接下来准备在学习本课程之余阅读 Effective Modern C++ && C++ Concurrency In Action, 学习现代Cpp的使用和Cpp的并发编程。
@@ -32,7 +32,7 @@ erase调用导致iter指向的RB_Tree对应节点被删除了，后面使用的i
 
 在一开始，我认为dirty位的更新逻辑应该是根据unpin返回时，根据用户给定的is_dirty是dirty就在pages_里保存为dirty=true，不是就保存dirty=false。后来我发现这种方式是错误的，因为假如后续一个用户读取一个在内存中的已经被标记为脏的页时，假如其没有对该页进行修改，那么其unpin这个页时的is_dirty参数为false，如果这个false覆盖了原先的is_dirty=true,
 就会导致先前的修改丢失，所以需要加上一个判断, 仅有在unpin时回传的参数is_dirty为true时才进行覆盖。
-``
+
 最终排名:
 ![rank](img/p1_1.jpg)
 
@@ -118,7 +118,64 @@ Catalog: 一个数据库维护一个Catalog，以跟踪关于数据库的元数�
 
 TableInfo: Table的元数据，包括一个指向table的unique_ptr和属于该table的schema。
 
-TableHeap: 提供了对于该table插入、查询和删除tuple的方法，table_heap仅存储了buffer_bool_manager的指针和存储该表的首个page_id，通过此来访问table。
+TableHeap: 提供了对于table插入、查询和删除tuple的方法，在执行时保证了并发安全访问, 在执行操作时记录了table的UndoLog(table_write_set_)。
 
-// pending
+RID: table中Tuple对应的record id，包含了定位Tuple所在的page和slot信息。
 
+Index: 可通过Catalog的GetTableIndexes访问到各Table的Index，Index使用了我们在Project 2里实现的Extendible Hash Table，本质上保存了Tuple->RID的映射。
+
+### 主要目标
+
+Project 3的目标是让我们实现一系列基于Volcano Model的SQL查询Executor，难点不在于实现而在于理解开发环境的上下文，需要结合课程的内容和Lab提供代码来理解，Volcano Model的设计如下:
+
+![image](https://user-images.githubusercontent.com/29897667/124756964-ac44a880-df5f-11eb-85c5-4b8b570c9c25.png)
+
+对于一个tuple，这种模型能使它在query plan中尽可能多地被使用，即在一个operator中处理完后，然后返回并传入下一个operator继续处理。Volcano Model通过为数据库中的每个operator实现一个Next函数来工作，查询计划中的每个节点在其子节点上调用Next，直到到达叶子节点，叶子节点开始进行处理, 并向其父节点发出tuple。然后，每个tuple在返回上一级节点前，尽可能地按照计划完成处理。
+
+总的来说，Project 3的难度比较平稳，基本上可以通过阅读源码搞懂几个对象的工作方式，没有Project 2难。
+
+最终排名:
+
+![img](img/p3_1.jpg)
+
+## Project 4: [concurrency control][link4]
+
+[link4]: https://15445.courses.cs.cmu.edu/fall2021/project4/
+
+### LockManager
+
+LockManager需要我们理解几种隔离级别采用的并发控制方式：
+
+- Serializable: 通过S2PL和index lock实现，本实验不要求实现。
+
+- Repeatable Read: 事务 T 要修改数据 A 时必须加 X 锁，直到 T 结束才释放锁; 要求读取数据 A 时必须加 S 锁，直到事务结束了才能释放 S 锁。 - SS2PL
+
+- Read committed: 事务 T 要修改数据 A 时必须加 X 锁，直到 T 结束才释放锁; 还要求读取数据 A 时必须加 S 锁，读取完马上释放 S 锁。 - S2PL
+
+- Read uncommitted: 事务 T 要修改数据 A 时必须加 X 锁，直到 T 结束才释放锁; 不使用 S 锁。
+
+理解了这几个隔离级别的并发控制方式我们就可以比较容易地实现Project 4的Task#1了, 此外我们还需要对2PL的相关规则进行维护，对于状态不处于2PL Growing阶段的Lock请求，需要对事务进行Abort; 对于进行Unlock的事务，设置其状态为Shrinking等等。
+
+### Lock Request Queue
+
+LockManager中有一个保存着当前所有Lock Request的队列(std::list)，我们可以通过这个队列和condition_variable来完成对Exclusive/Shared Lock的获取和释放规则判断:
+
+- Exclusive Lock: 仅在队首的lock request为自己时才可以获取到，否则需要等待
+
+- Shared Lock: 在队首的lock request不为Exclusive Lock时就可以获取到，否则需要等待
+
+按照这个规则来判断一个lock的获取是否需要等待，锁升级的逻辑则是当S lock成为队首时才可升级，否则也需要等待；**在锁释放时**从queue中(如果是s_lock不在队首就从队中找到其进行移除)移除lock request, 这样就可以保证 X 锁的独占性和 S 锁的可共享性了；同时在获取锁时我们通过使用condition_variable来避免busy-wait, 在队列中出现成员减少(包括事务因为死锁预防被Abort和事务主动Unlock两种情况)，就会notify_all通知所有还在等待的lock request检查lock是否可以被获取，使用cond可以避免事务一直处于自旋检查是否可以抢到锁的状态，同时在cond.wait时会释放lock_manager的latch，使其他事务的lock_request也可加入lock_req_queue。
+
+### 死锁预防
+
+本Lab要求根据Wound-Wait(young wait for old)方式来进行死锁预防，当一个事务进入lock_request, 我们会比较所有排在该事务前面的lock_request, 如果比该事务young且和自己构成抢占关系(如自己是S_lock则和X_lock抢占，X_lock和所有lock抢占)，则会将这个lock_request的事务Abort。
+
+那么如何判断事务的young和old呢，根据Andy的说法是根据txn_id，因为txn_id是根据事务被创建时的时间戳来的，所以比较txn_id就可以判断事务的old和young，在事务被Abort后事务仍然会继承原先的txn_id，这样在下一轮抢锁时就具有一定优势，可以避免长时间饥饿状态的出现。
+
+### CONCURRENT QUERY EXECUTION
+
+主要就是根据各隔离级别的规则，在何时获取X,S锁，还有就是关注WriteSet和IndexWriteSet的维护(相当于事务执行时的undolog), 事务rollback时会参考这二者。
+
+最终score：
+
+![img](img/p4_1.png)

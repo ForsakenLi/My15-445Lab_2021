@@ -73,6 +73,7 @@ bool TablePage::InsertTuple(const Tuple &tuple, RID *rid, Transaction *txn, Lock
 
   // Write the log record.
   if (enable_logging) {
+    //! 可以看到，Andy认为一个Insert的新插入的tuple不应该被locked
     BUSTUB_ASSERT(!txn->IsSharedLocked(*rid) && !txn->IsExclusiveLocked(*rid), "A new tuple should not be locked.");
     // Acquire an exclusive lock on the new tuple.
     bool locked = lock_manager->LockExclusive(txn, *rid);

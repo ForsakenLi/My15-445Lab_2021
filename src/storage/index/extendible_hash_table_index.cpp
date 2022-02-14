@@ -18,7 +18,7 @@ template <typename KeyType, typename ValueType, typename KeyComparator>
 void HASH_TABLE_INDEX_TYPE::InsertEntry(const Tuple &key, RID rid, Transaction *transaction) {
   // construct insert index key
   KeyType index_key;
-  index_key.SetFromKey(key);
+  index_key.SetFromKey(key);  // call GenericKey::SetFromKey
 
   container_.Insert(transaction, index_key, rid);
 }

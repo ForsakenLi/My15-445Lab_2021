@@ -26,7 +26,20 @@ UpdateExecutor::UpdateExecutor(ExecutorContext *exec_ctx, const UpdatePlanNode *
 void UpdateExecutor::Init() { child_executor_->Init(); }
 
 bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
+  LockManager *lock_manager = GetExecutorContext()->GetLockManager();
+  Transaction *txn = GetExecutorContext()->GetTransaction();
   while (child_executor_->Next(tuple, rid)) {
+    // if have s_lock, upgrade it to x_lock, else apply x_lock
+    if (txn->IsSharedLocked(*rid)) {
+      if (!lock_manager->LockUpgrade(txn, *rid)) {
+        throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
+      }
+    } else {
+      if (!lock_manager->LockExclusive(txn, *rid)) {
+        throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
+      }
+    }
+    Tuple *old_tuple = tuple;
     *tuple = GenerateUpdatedTuple(*tuple);
     if (!table_heap_->UpdateTuple(*tuple, *rid, exec_ctx_->GetTransaction())) {
       LOG_DEBUG("Update tuple failed");
@@ -37,8 +50,18 @@ bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
       index->index_->InsertEntry(
           tuple->KeyFromTuple(table_info_->schema_, *index->index_->GetKeySchema(), index->index_->GetKeyAttrs()), *rid,
           exec_ctx_->GetTransaction());
+
+      auto undo_index_rec =
+          IndexWriteRecord(*rid, table_info_->oid_, WType::UPDATE, *tuple, index->index_oid_, exec_ctx_->GetCatalog());
+      undo_index_rec.old_tuple_ = *old_tuple;
+      txn->GetIndexWriteSet()->emplace_back(undo_index_rec);
+    }
+
+    if (txn->GetIsolationLevel() != IsolationLevel::REPEATABLE_READ && !lock_manager->Unlock(txn, *rid)) {
+      throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
     }
   }
+
   return false;
 }
 

@@ -30,7 +30,7 @@ class ReaderWriterLatch {
 
  public:
   ReaderWriterLatch() = default;
-  ~ReaderWriterLatch() { std::lock_guard<mutex_t> guard(mutex_); }
+  ~ReaderWriterLatch() { std::lock_guard<mutex_t> guard(mutex_); }  // wait for every function end
 
   DISALLOW_COPY(ReaderWriterLatch);
 
@@ -44,9 +44,14 @@ class ReaderWriterLatch {
     }
     writer_entered_ = true;
     while (reader_count_ > 0) {  // 如有其他读者也需等待，同时writer_entered=true意味着不会有新的读者
-      writer_.wait(latch);
+      writer_.wait(latch);       // 写者条件变量仅在所有读者退出时(reader_count == 0)才会结束等待
     }
   }
+
+  //! 写者条件变量解决的是reader_count == 0的busy-wait问题，因为仅在reader_count == 0时写者才能拿到写锁
+  //
+  //! 读者条件变量解决的是reader_count_ < MAX_READERS和writer_entered_ == false两个的busy_wait
+  //! 仅在这两个条件满足时才能获取到读锁
 
   /**
    * Release a write latch.
@@ -54,7 +59,7 @@ class ReaderWriterLatch {
   void WUnlock() {
     std::lock_guard<mutex_t> guard(mutex_);
     writer_entered_ = false;
-    reader_.notify_all();
+    reader_.notify_all();  // 写锁释放的是reader_的条件变量
   }
 
   /**

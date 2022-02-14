@@ -28,6 +28,7 @@ Transaction *TransactionManager::Begin(Transaction *txn, IsolationLevel isolatio
   global_txn_latch_.RLock();
 
   if (txn == nullptr) {
+    // the new transaction have bigger txn_id
     txn = new Transaction(next_txn_id_++, isolation_level);
   }
   txn_map_mutex.lock();
@@ -53,7 +54,7 @@ void TransactionManager::Commit(Transaction *txn) {
   write_set->clear();
 
   // Release all the locks.
-  ReleaseLocks(txn);
+  ReleaseLocks(txn);  //! 事务的所有锁在commit时会被此函数释放, 因此对于可重复读, 不需要我们自己unlock
   // Release the global transaction latch.
   global_txn_latch_.RUnlock();
 }
@@ -61,9 +62,9 @@ void TransactionManager::Commit(Transaction *txn) {
 void TransactionManager::Abort(Transaction *txn) {
   txn->SetState(TransactionState::ABORTED);
   // Rollback before releasing the lock.
-  auto table_write_set = txn->GetWriteSet();
+  auto table_write_set = txn->GetWriteSet();  // is deque not set
   while (!table_write_set->empty()) {
-    auto &item = table_write_set->back();
+    auto &item = table_write_set->back();  // undo from back to front
     auto table = item.table_;
     if (item.wtype_ == WType::DELETE) {
       table->RollbackDelete(item.rid_, txn);
@@ -71,12 +72,14 @@ void TransactionManager::Abort(Transaction *txn) {
       // Note that this also releases the lock when holding the page latch.
       table->ApplyDelete(item.rid_, txn);
     } else if (item.wtype_ == WType::UPDATE) {
+      // the item.tuple_ is the old tuple
       table->UpdateTuple(item.tuple_, item.rid_, txn);
     }
     table_write_set->pop_back();
   }
   table_write_set->clear();
   // Rollback index updates
+  //! 可以看到，在Abort时会执行对indexWriteSet的逆向操作，恢复先前的index
   auto index_write_set = txn->GetIndexWriteSet();
   while (!index_write_set->empty()) {
     auto &item = index_write_set->back();
@@ -93,6 +96,7 @@ void TransactionManager::Abort(Transaction *txn) {
     } else if (item.wtype_ == WType::UPDATE) {
       // Delete the new key and insert the old key
       index_info->index_->DeleteEntry(new_key, item.rid_, txn);
+      // 在回滚时使用的是old_tuple，需要我们在Update index时自己保存，默认的构造函数没有提供
       auto old_key = item.old_tuple_.KeyFromTuple(table_info->schema_, *(index_info->index_->GetKeySchema()),
                                                   index_info->index_->GetKeyAttrs());
       index_info->index_->InsertEntry(old_key, item.rid_, txn);

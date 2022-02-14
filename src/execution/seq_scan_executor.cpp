@@ -29,16 +29,26 @@ bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
   }
 
   *tuple = *iter_;
+  // The output of sequential scan is a copy of each matched tuple and its original record identifier (RID)
   *rid = tuple->GetRid();
+  LockManager *lock_manager = GetExecutorContext()->GetLockManager();
+  Transaction *txn = GetExecutorContext()->GetTransaction();
+  if (txn->GetIsolationLevel() != IsolationLevel::READ_UNCOMMITTED && !lock_manager->LockShared(txn, *rid)) {
+    // if isolation level require s_lock but failed to get
+    throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
+  }
 
   std::vector<Value> values;
   for (size_t i = 0; i < plan_->OutputSchema()->GetColumnCount(); i++) {
     values.emplace_back(plan_->OutputSchema()->GetColumn(i).GetExpr()->Evaluate(tuple, schema_));
   }
-
+  *tuple = Tuple(values, plan_->OutputSchema());
   ++iter_;
 
-  *tuple = Tuple(values, plan_->OutputSchema());
+  if (txn->GetIsolationLevel() == IsolationLevel::READ_COMMITTED && !lock_manager->Unlock(txn, *rid)) {
+    // for read committed, when read finish we should release the s_lock
+    throw TransactionAbortException(txn->GetTransactionId(), AbortReason::DEADLOCK);
+  }
 
   //! 使用predicate判断该tuple是否应该输出，不满足再次发起Next调用
   const AbstractExpression *predict = plan_->GetPredicate();
