@@ -148,7 +148,7 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
     }
     // remove from page table
     page_table_.erase(page->GetPageId());
-  }
+  } // if freelist is empty and no one can victim, return nullptr
 
   if (page != nullptr) {
     // set for new page
@@ -236,38 +236,6 @@ page_id_t BufferPoolManagerInstance::AllocatePage() {
 
 void BufferPoolManagerInstance::ValidatePageId(const page_id_t page_id) const {
   assert(page_id % num_instances_ == instance_index_);  // allocated pages mod back to this BPI
-}
-
-void BufferPoolManagerInstance::FlushPageToDisk(page_id_t page_id) {
-  auto iter = page_table_.find(page_id);
-  frame_id_t fid = -1;
-  if (iter != page_table_.end()) {
-    fid = iter->second;
-  }
-  if (fid == -1) {
-    return;
-  }
-  if (pages_[fid].IsDirty()) {  // 非dirty则无需写回
-    disk_manager_->WritePage(page_id, pages_[fid].GetData());
-  }
-}
-
-frame_id_t BufferPoolManagerInstance::FetchFreeFrame() {
-  if (!free_list_.empty()) {  // 首先从free_list头部寻找
-    frame_id_t res = free_list_.front();
-    free_list_.pop_front();
-    return res;
-  }
-  frame_id_t res;
-  if (replacer_->Victim(&res)) {  // 如果free_list里没有，从replacer中移除一个page
-    page_id_t page_id = pages_[res].page_id_;
-    // 将之从内存中清除出去
-    FlushPageToDisk(page_id);
-    page_table_.erase(page_id);
-    pages_[res].is_dirty_ = false;
-    return res;
-  }
-  return -1;
 }
 
 }  // namespace bustub

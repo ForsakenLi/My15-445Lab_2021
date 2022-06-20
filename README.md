@@ -26,12 +26,16 @@ pages_[iter->second].is_dirty_ = false;
 pages_[iter->second].page_id_ = INVALID_PAGE_ID;
 memset(pages_[iter->second].GetData(), 0, PAGE_SIZE);
 ```
-erase调用导致iter指向的RB_Tree对应节点被删除了，后面使用的iter指向的空间是未知的。这个问题带了的启示是迭代器指向的区域不是静态的，例如vector扩容等都会导致原先获取的迭代器失效，因此使用迭代器应该做到即用即取，不要使用指向数据空间可能发生过变化的迭代器。
+erase调用导致iter指向的对应节点被删除了，后面使用的iter指向的空间是未知的。这个问题带了的启示是迭代器指向的区域不是静态的，例如vector扩容/unordered容器插入和删除等都会导致原先获取的迭代器失效(除了list和forward_list的迭代器不会失效)，因此使用迭代器应该做到即用即取，不要使用指向数据空间可能发生过变化的迭代器。
 
 2. dirty位的更新问题
 
+> 这里主要考虑两个case: 1. A、B在时刻1、2读取page，A在时刻3放回page并修改该page，B在时刻4放回并没有修改page，那么这个页在时刻4就是不脏的；2. A在时刻1-3取走并修改放回了该page，B在4～5取走并无修改的放回了page，那么这个页在时刻5还是脏的，因为B读取的是经过A修改的脏页
+
 在一开始，我认为dirty位的更新逻辑应该是根据unpin返回时，根据用户给定的is_dirty是dirty就在pages_里保存为dirty=true，不是就保存dirty=false。后来我发现这种方式是错误的，因为假如后续一个用户读取一个在内存中的已经被标记为脏的页时，假如其没有对该页进行修改，那么其unpin这个页时的is_dirty参数为false，如果这个false覆盖了原先的is_dirty=true,
 就会导致先前的修改丢失，所以需要加上一个判断, 仅有在unpin时回传的参数is_dirty为true时才进行覆盖。
+
+> 这种做法事实上会导致
 
 最终排名:
 ![rank](img/p1_1.jpg)
@@ -104,9 +108,7 @@ extendible hash在扩容时采用的是分裂的方法, 即将原先前缀为xxx
 
 ![rank](img/p2_2.jpg)
 
-## Project 3: [query execution][link3]
-
-[link3]: https://15445.courses.cs.cmu.edu/fall2021/project3/
+## Project 3: [query execution](https://15445.courses.cs.cmu.edu/fall2021/project3/)
 
 ### 对象含义
 
@@ -122,7 +124,7 @@ TableHeap: 提供了对于table插入、查询和删除tuple的方法，在执�
 
 RID: table中Tuple对应的record id，包含了定位Tuple所在的page和slot信息。
 
-Index: 可通过Catalog的GetTableIndexes访问到各Table的Index，Index使用了我们在Project 2里实现的Extendible Hash Table，本质上保存了Tuple->RID的映射。
+Index: 可通过Catalog的GetTableIndexes访问到各Table的Index(注意一个Table不止一个索引)，Index使用了我们在Project 2里实现的Extendible Hash Table，本质上保存了Tuple->RID的映射。
 
 ### 主要目标
 
@@ -132,7 +134,7 @@ Project 3的目标是让我们实现一系列基于Volcano Model的SQL查询Exec
 
 对于一个tuple，这种模型能使它在query plan中尽可能多地被使用，即在一个operator中处理完后，然后返回并传入下一个operator继续处理。Volcano Model通过为数据库中的每个operator实现一个Next函数来工作，查询计划中的每个节点在其子节点上调用Next，直到到达叶子节点，叶子节点开始进行处理, 并向其父节点发出tuple。然后，每个tuple在返回上一级节点前，尽可能地按照计划完成处理。
 
-总的来说，Project 3的难度比较平稳，基本上可以通过阅读源码搞懂几个对象的工作方式，没有Project 2难。
+总的来说，Project 3的难度比较平稳，基本上可以通过阅读源码搞懂几个对象的工作方式，然后结合对应Executor课程ppt和Lab提示就可以肝出来，也不用做并发控制，总体上来说我认为没有Project 2难。
 
 最终排名:
 

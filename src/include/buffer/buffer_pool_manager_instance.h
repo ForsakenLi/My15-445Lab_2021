@@ -121,10 +121,6 @@ class BufferPoolManagerInstance : public BufferPoolManager {
    */
   void ValidatePageId(page_id_t page_id) const;
 
-  void FlushPageToDisk(page_id_t page_id);
-
-  frame_id_t FetchFreeFrame();
-
   /** Number of pages in the buffer pool. */
   const size_t pool_size_;
   /** How many instances are in the parallel BPM (if present, otherwise just 1 BPI) */

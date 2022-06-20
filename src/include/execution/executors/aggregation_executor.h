@@ -105,7 +105,7 @@ class SimpleAggregationHashTable {
     if (ht_.count(agg_key) == 0) {
       ht_.insert({agg_key, GenerateInitialAggregateValue()});
     }
-    // 可以看到其实对于每次insert，都有
+    // 将key相同的Value合并在一起(通过聚合函数，如Max，Count等)
     CombineAggregateValues(&ht_[agg_key], agg_val);
   }
 

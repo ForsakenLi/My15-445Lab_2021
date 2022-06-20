@@ -56,7 +56,6 @@ bool HashJoinExecutor::Next(Tuple *tuple, RID *rid) {
       my_map_[GetMyJoinKey(&inner_tuple, false)];  // those tuples have the same hash value with the inner_tuple
   for (const auto &match_outer_tuple : match_tuples) {
     std::vector<Value> output;
-    // evaluate match_outer_tuple whether can join with inner_tuple or not
     for (const auto &column : GetOutputSchema()->GetColumns()) {
       output.emplace_back(column.GetExpr()->EvaluateJoin(&match_outer_tuple, left_child_->GetOutputSchema(),
                                                          &inner_tuple, right_child_->GetOutputSchema()));
